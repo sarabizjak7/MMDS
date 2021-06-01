@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>CS246_Colab_7_sarabizjak</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>CS246_Colab_8_Sarabizjak</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11775,7 +11775,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="CS246---Colab-7">CS246 - Colab 7<a class="anchor-link" href="#CS246---Colab-7">&#182;</a></h1><h2 id="Decision-Trees-on-Spark">Decision Trees on Spark<a class="anchor-link" href="#Decision-Trees-on-Spark">&#182;</a></h2>
+<h1 id="CS246---Colab-8">CS246 - Colab 8<a class="anchor-link" href="#CS246---Colab-8">&#182;</a></h1><h2 id="Bloom-Filters">Bloom Filters<a class="anchor-link" href="#Bloom-Filters">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -11791,21 +11791,17 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Let's setup Spark on your Colab environment.  Run the cell below!</p>
+<p>In this Colab we just need to install a <a href="https://github.com/hiway/python-bloom-filter">bloom_filter</a>, a Python library which offers an implementations of Bloom filters.  Run the cell below!</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>pip install pyspark
-<span class="o">!</span>pip install -U -q PyDrive
-<span class="o">!</span>apt install openjdk-8-jdk-headless -qq
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAVA_HOME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;/usr/lib/jvm/java-8-openjdk-amd64&quot;</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>pip install bloom_filter
 </pre></div>
 
 </div>
@@ -11822,243 +11818,10 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Requirement already satisfied: pyspark in /usr/local/lib/python3.7/dist-packages (3.1.1)
-Requirement already satisfied: py4j==0.10.9 in /usr/local/lib/python3.7/dist-packages (from pyspark) (0.10.9)
-openjdk-8-jdk-headless is already the newest version (8u292-b10-0ubuntu1~18.04).
-The following package was automatically installed and is no longer required:
-  libnvidia-common-460
-Use &#39;apt autoremove&#39; to remove it.
-0 upgraded, 0 newly installed, 0 to remove and 34 not upgraded.
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Now we authenticate a Google Drive client to download the files we will be processing in our Spark job.</p>
-<p><strong>Make sure to follow the interactive instructions.</strong></p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pydrive.auth</span> <span class="k">import</span> <span class="n">GoogleAuth</span>
-<span class="kn">from</span> <span class="nn">pydrive.drive</span> <span class="k">import</span> <span class="n">GoogleDrive</span>
-<span class="kn">from</span> <span class="nn">google.colab</span> <span class="k">import</span> <span class="n">auth</span>
-<span class="kn">from</span> <span class="nn">oauth2client.client</span> <span class="k">import</span> <span class="n">GoogleCredentials</span>
-
-<span class="c1"># Authenticate and create the PyDrive client</span>
-<span class="n">auth</span><span class="o">.</span><span class="n">authenticate_user</span><span class="p">()</span>
-<span class="n">gauth</span> <span class="o">=</span> <span class="n">GoogleAuth</span><span class="p">()</span>
-<span class="n">gauth</span><span class="o">.</span><span class="n">credentials</span> <span class="o">=</span> <span class="n">GoogleCredentials</span><span class="o">.</span><span class="n">get_application_default</span><span class="p">()</span>
-<span class="n">drive</span> <span class="o">=</span> <span class="n">GoogleDrive</span><span class="p">(</span><span class="n">gauth</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;1aJrdYMVmmnUKYhLTlXtyB0FQ9gYJqCrs&#39;</span>
-<span class="n">downloaded</span> <span class="o">=</span> <span class="n">drive</span><span class="o">.</span><span class="n">CreateFile</span><span class="p">({</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
-<span class="n">downloaded</span><span class="o">.</span><span class="n">GetContentFile</span><span class="p">(</span><span class="s1">&#39;mnist-digits-train.txt&#39;</span><span class="p">)</span>
-
-<span class="nb">id</span><span class="o">=</span><span class="s1">&#39;1yLwxRaJIyrC03yxqbTKpedMmHEF86AAq&#39;</span>
-<span class="n">downloaded</span> <span class="o">=</span> <span class="n">drive</span><span class="o">.</span><span class="n">CreateFile</span><span class="p">({</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
-<span class="n">downloaded</span><span class="o">.</span><span class="n">GetContentFile</span><span class="p">(</span><span class="s1">&#39;mnist-digits-test.txt&#39;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>If you executed the cells above, you should be able to see the dataset we will use for this Colab under the "Files" tab on the left panel.</p>
-<p>Next, we import some of the common libraries needed for our task.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="o">%</span><span class="k">matplotlib</span> inline
-
-<span class="kn">import</span> <span class="nn">pyspark</span>
-<span class="kn">from</span> <span class="nn">pyspark.sql</span> <span class="k">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">pyspark.sql.types</span> <span class="k">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">pyspark.sql.functions</span> <span class="k">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">pyspark</span> <span class="k">import</span> <span class="n">SparkContext</span><span class="p">,</span> <span class="n">SparkConf</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Let's initialize the Spark context.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># create the session</span>
-<span class="n">conf</span> <span class="o">=</span> <span class="n">SparkConf</span><span class="p">()</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;spark.ui.port&quot;</span><span class="p">,</span> <span class="s2">&quot;4050&quot;</span><span class="p">)</span>
-
-<span class="c1"># create the context</span>
-<span class="n">sc</span> <span class="o">=</span> <span class="n">pyspark</span><span class="o">.</span><span class="n">SparkContext</span><span class="p">(</span><span class="n">conf</span><span class="o">=</span><span class="n">conf</span><span class="p">)</span>
-<span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>You can easily check the current version and get the link of the web interface. In the Spark UI, you can monitor the progress of your job and debug the performance bottlenecks (if your Colab is running with a <strong>local runtime</strong>).</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">spark</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[8]:</div>
-
-
-
-<div class="output_html rendered_html output_subarea output_execute_result">
-
-            <div>
-                <p><b>SparkSession - in-memory</b></p>
-                
-        <div>
-            <p><b>SparkContext</b></p>
-
-            <p><a href="http://229d296059b3:4050">Spark UI</a></p>
-
-            <dl>
-              <dt>Version</dt>
-                <dd><code>v3.1.1</code></dd>
-              <dt>Master</dt>
-                <dd><code>local[*]</code></dd>
-              <dt>AppName</dt>
-                <dd><code>pyspark-shell</code></dd>
-            </dl>
-        </div>
-        
-            </div>
-        
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>If you are running this Colab on the Google hosted runtime, the cell below will create a <em>ngrok</em> tunnel which will allow you to still check the Spark UI.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-<span class="o">!</span>unzip ngrok-stable-linux-amd64.zip
-<span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">system_raw</span><span class="p">(</span><span class="s1">&#39;./ngrok http 4050 &amp;&#39;</span><span class="p">)</span>
-<span class="o">!</span>curl -s http://localhost:4040/api/tunnels <span class="p">|</span> python3 -c <span class="err">\</span>
-    <span class="s2">&quot;import sys, json; print(json.load(sys.stdin)[&#39;tunnels&#39;][0][&#39;public_url&#39;])&quot;</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>--2021-05-15 15:19:34--  https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-Resolving bin.equinox.io (bin.equinox.io)... 3.216.229.131, 52.206.13.74, 3.224.116.172, ...
-Connecting to bin.equinox.io (bin.equinox.io)|3.216.229.131|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 13832437 (13M) [application/octet-stream]
-Saving to: ‘ngrok-stable-linux-amd64.zip’
-
-ngrok-stable-linux- 100%[===================&gt;]  13.19M  5.98MB/s    in 2.2s    
-
-2021-05-15 15:19:37 (5.98 MB/s) - ‘ngrok-stable-linux-amd64.zip’ saved [13832437/13832437]
-
-Archive:  ngrok-stable-linux-amd64.zip
-  inflating: ngrok                   
-Traceback (most recent call last):
-  File &#34;&lt;string&gt;&#34;, line 1, in &lt;module&gt;
-IndexError: list index out of range
+<pre>Collecting bloom_filter
+  Downloading https://files.pythonhosted.org/packages/6f/85/c26819421801c5a04a2743e329641dde22225a55153d5477c032b4f7d40e/bloom_filter-1.3-py3-none-any.whl
+Installing collected packages: bloom-filter
+Successfully installed bloom-filter-1.3
 </pre>
 </div>
 </div>
@@ -12079,57 +11842,23 @@ IndexError: list index out of range
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/MnistExamples.png/220px-MnistExamples.png" alt="MNIST"></p>
-<p>In this Colab, we will be using the famous <a href="https://en.wikipedia.org/wiki/MNIST_database">MNIST database</a>, a large collection of handwritten digits that is widely used for training and testing in the field of machine learning.</p>
-<p>For your convenience, the dataset has already been converted to the popular LibSVM format, where each digit is represented as a sparse vector of grayscale pixel values.</p>
+<p>From the NLTK (Natural Language ToolKit) library, we import a large list of English dictionary words, commonly used by the very first spell-checking programs in Unix-like operating systems.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">training</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;libsvm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;mnist-digits-train.txt&quot;</span><span class="p">)</span>
-<span class="n">test</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;libsvm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;mnist-digits-test.txt&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">nltk</span>
+<span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">&#39;words&#39;</span><span class="p">)</span>
 
-<span class="c1"># Cache data for multiple uses</span>
-<span class="n">training</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
-<span class="n">test</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[10]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>DataFrame[label: double, features: vector]</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">training</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">truncate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="k">import</span> <span class="n">words</span>
+<span class="n">word_list</span> <span class="o">=</span> <span class="n">words</span><span class="o">.</span><span class="n">words</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Dictionary length: {len(word_list)}&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">word_list</span><span class="p">[:</span><span class="mi">15</span><span class="p">])</span>
 </pre></div>
 
 </div>
@@ -12146,32 +11875,10 @@ IndexError: list index out of range
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|label|features                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|5.0  |(780,[152,153,154,155,156,157,158,159,160,161,162,163,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,231,232,233,234,235,236,237,238,239,240,241,260,261,262,263,264,265,266,268,269,289,290,291,292,293,319,320,321,322,347,348,349,350,376,377,378,379,380,381,405,406,407,408,409,410,434,435,436,437,438,439,463,464,465,466,467,493,494,495,496,518,519,520,521,522,523,524,544,545,546,547,548,549,550,551,570,571,572,573,574,575,576,577,578,596,597,598,599,600,601,602,603,604,605,622,623,624,625,626,627,628,629,630,631,648,649,650,651,652,653,654,655,656,657,676,677,678,679,680,681,682,683],[3.0,18.0,18.0,18.0,126.0,136.0,175.0,26.0,166.0,255.0,247.0,127.0,30.0,36.0,94.0,154.0,170.0,253.0,253.0,253.0,253.0,253.0,225.0,172.0,253.0,242.0,195.0,64.0,49.0,238.0,253.0,253.0,253.0,253.0,253.0,253.0,253.0,253.0,251.0,93.0,82.0,82.0,56.0,39.0,18.0,219.0,253.0,253.0,253.0,253.0,253.0,198.0,182.0,247.0,241.0,80.0,156.0,107.0,253.0,253.0,205.0,11.0,43.0,154.0,14.0,1.0,154.0,253.0,90.0,139.0,253.0,190.0,2.0,11.0,190.0,253.0,70.0,35.0,241.0,225.0,160.0,108.0,1.0,81.0,240.0,253.0,253.0,119.0,25.0,45.0,186.0,253.0,253.0,150.0,27.0,16.0,93.0,252.0,253.0,187.0,249.0,253.0,249.0,64.0,46.0,130.0,183.0,253.0,253.0,207.0,2.0,39.0,148.0,229.0,253.0,253.0,253.0,250.0,182.0,24.0,114.0,221.0,253.0,253.0,253.0,253.0,201.0,78.0,23.0,66.0,213.0,253.0,253.0,253.0,253.0,198.0,81.0,2.0,18.0,171.0,219.0,253.0,253.0,253.0,253.0,195.0,80.0,9.0,55.0,172.0,226.0,253.0,253.0,253.0,253.0,244.0,133.0,11.0,136.0,253.0,253.0,253.0,212.0,135.0,132.0,16.0])                                                                                                                                                                                                                                                                                                                                                             |
-|0.0  |(780,[127,128,129,130,131,154,155,156,157,158,159,181,182,183,184,185,186,187,188,189,207,208,209,210,211,212,213,214,215,216,217,235,236,237,238,239,240,241,242,243,244,245,262,263,264,265,266,267,268,269,270,271,272,273,289,290,291,292,293,294,295,296,297,300,301,302,316,317,318,319,320,321,328,329,330,343,344,345,346,347,348,349,356,357,358,371,372,373,374,384,385,386,399,400,401,412,413,414,426,427,428,429,440,441,442,454,455,456,457,466,467,468,469,470,482,483,484,493,494,495,496,497,510,511,512,520,521,522,523,538,539,540,547,548,549,550,566,567,568,569,570,571,572,573,574,575,576,577,578,594,595,596,597,598,599,600,601,602,603,604,622,623,624,625,626,627,628,629,630,651,652,653,654,655,656,657],[51.0,159.0,253.0,159.0,50.0,48.0,238.0,252.0,252.0,252.0,237.0,54.0,227.0,253.0,252.0,239.0,233.0,252.0,57.0,6.0,10.0,60.0,224.0,252.0,253.0,252.0,202.0,84.0,252.0,253.0,122.0,163.0,252.0,252.0,252.0,253.0,252.0,252.0,96.0,189.0,253.0,167.0,51.0,238.0,253.0,253.0,190.0,114.0,253.0,228.0,47.0,79.0,255.0,168.0,48.0,238.0,252.0,252.0,179.0,12.0,75.0,121.0,21.0,253.0,243.0,50.0,38.0,165.0,253.0,233.0,208.0,84.0,253.0,252.0,165.0,7.0,178.0,252.0,240.0,71.0,19.0,28.0,253.0,252.0,195.0,57.0,252.0,252.0,63.0,253.0,252.0,195.0,198.0,253.0,190.0,255.0,253.0,196.0,76.0,246.0,252.0,112.0,253.0,252.0,148.0,85.0,252.0,230.0,25.0,7.0,135.0,253.0,186.0,12.0,85.0,252.0,223.0,7.0,131.0,252.0,225.0,71.0,85.0,252.0,145.0,48.0,165.0,252.0,173.0,86.0,253.0,225.0,114.0,238.0,253.0,162.0,85.0,252.0,249.0,146.0,48.0,29.0,85.0,178.0,225.0,253.0,223.0,167.0,56.0,85.0,252.0,252.0,252.0,229.0,215.0,252.0,252.0,252.0,196.0,130.0,28.0,199.0,252.0,252.0,253.0,252.0,252.0,233.0,145.0,25.0,128.0,252.0,253.0,252.0,141.0,37.0])                                                                                                                                                                                                                                                   |
-|4.0  |(780,[160,161,162,172,173,188,189,190,200,201,215,216,217,218,228,229,243,244,245,256,257,271,272,273,283,284,285,299,300,301,311,312,313,326,327,328,329,339,340,341,354,355,356,357,367,368,369,379,380,381,382,383,384,395,396,397,401,402,403,404,405,406,407,408,409,410,411,412,423,424,425,426,427,428,429,430,431,432,433,434,435,436,437,438,439,452,453,454,455,456,457,458,459,465,466,467,493,494,495,521,522,523,549,550,551,577,578,579,605,606,607,633,634,635,661,662,663,689,690,691],[67.0,232.0,39.0,62.0,81.0,120.0,180.0,39.0,126.0,163.0,2.0,153.0,210.0,40.0,220.0,163.0,27.0,254.0,162.0,222.0,163.0,183.0,254.0,125.0,46.0,245.0,163.0,198.0,254.0,56.0,120.0,254.0,163.0,23.0,231.0,254.0,29.0,159.0,254.0,120.0,163.0,254.0,216.0,16.0,159.0,254.0,67.0,14.0,86.0,178.0,248.0,254.0,91.0,159.0,254.0,85.0,47.0,49.0,116.0,144.0,150.0,241.0,243.0,234.0,179.0,241.0,252.0,40.0,150.0,253.0,237.0,207.0,207.0,207.0,253.0,254.0,250.0,240.0,198.0,143.0,91.0,28.0,5.0,233.0,250.0,119.0,177.0,177.0,177.0,177.0,177.0,98.0,56.0,102.0,254.0,220.0,169.0,254.0,137.0,169.0,254.0,57.0,169.0,254.0,57.0,169.0,255.0,94.0,169.0,254.0,96.0,169.0,254.0,153.0,169.0,255.0,153.0,96.0,254.0,153.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-|1.0  |(780,[158,159,160,161,185,186,187,188,189,213,214,215,216,217,240,241,242,243,244,245,267,268,269,270,271,295,296,297,298,322,323,324,325,326,349,350,351,352,353,377,378,379,380,381,404,405,406,407,408,431,432,433,434,435,459,460,461,462,463,486,487,488,489,490,514,515,516,517,518,542,543,544,545,569,570,571,572,573,596,597,598,599,600,601,624,625,626,627,652,653,654,655,680,681,682,683],[124.0,253.0,255.0,63.0,96.0,244.0,251.0,253.0,62.0,127.0,251.0,251.0,253.0,62.0,68.0,236.0,251.0,211.0,31.0,8.0,60.0,228.0,251.0,251.0,94.0,155.0,253.0,253.0,189.0,20.0,253.0,251.0,235.0,66.0,32.0,205.0,253.0,251.0,126.0,104.0,251.0,253.0,184.0,15.0,80.0,240.0,251.0,193.0,23.0,32.0,253.0,253.0,253.0,159.0,151.0,251.0,251.0,251.0,39.0,48.0,221.0,251.0,251.0,172.0,234.0,251.0,251.0,196.0,12.0,253.0,251.0,251.0,89.0,159.0,255.0,253.0,253.0,31.0,48.0,228.0,253.0,247.0,140.0,8.0,64.0,251.0,253.0,220.0,64.0,251.0,253.0,220.0,24.0,193.0,253.0,220.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-|9.0  |(780,[208,209,210,211,212,213,214,215,216,235,236,237,238,239,240,241,242,243,244,261,262,263,264,265,266,267,268,269,270,271,272,289,290,291,292,293,296,297,298,299,300,316,317,318,319,320,324,325,326,327,343,344,345,346,347,350,351,352,353,354,370,371,372,373,377,378,379,380,381,382,398,399,400,401,402,403,404,405,406,407,408,409,426,427,428,429,430,431,432,433,434,435,436,455,456,457,458,459,460,461,462,463,464,489,490,491,492,517,518,519,520,546,547,548,573,574,575,576,601,602,603,604,629,630,631,632,658,659,660,686,687,688,689,714,715,716,717,718,743,744,745,746],[55.0,148.0,210.0,253.0,253.0,113.0,87.0,148.0,55.0,87.0,232.0,252.0,253.0,189.0,210.0,252.0,252.0,253.0,168.0,4.0,57.0,242.0,252.0,190.0,65.0,5.0,12.0,182.0,252.0,253.0,116.0,96.0,252.0,252.0,183.0,14.0,92.0,252.0,252.0,225.0,21.0,132.0,253.0,252.0,146.0,14.0,215.0,252.0,252.0,79.0,126.0,253.0,247.0,176.0,9.0,8.0,78.0,245.0,253.0,129.0,16.0,232.0,252.0,176.0,36.0,201.0,252.0,252.0,169.0,11.0,22.0,252.0,252.0,30.0,22.0,119.0,197.0,241.0,253.0,252.0,251.0,77.0,16.0,231.0,252.0,253.0,252.0,252.0,252.0,226.0,227.0,252.0,231.0,55.0,235.0,253.0,217.0,138.0,42.0,24.0,192.0,252.0,143.0,62.0,255.0,253.0,109.0,71.0,253.0,252.0,21.0,253.0,252.0,21.0,71.0,253.0,252.0,21.0,106.0,253.0,252.0,21.0,45.0,255.0,253.0,21.0,218.0,252.0,56.0,96.0,252.0,189.0,42.0,14.0,184.0,252.0,170.0,11.0,14.0,147.0,252.0,42.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-|2.0  |(780,[155,156,157,158,159,181,182,183,184,185,186,187,207,208,209,210,211,212,213,214,215,216,233,234,235,236,237,238,239,240,241,242,243,244,261,262,263,264,265,266,267,269,270,271,272,289,290,291,292,293,294,297,298,299,300,317,318,319,320,325,326,327,328,353,354,355,356,377,378,379,380,381,382,383,384,402,403,404,405,406,407,408,409,410,411,428,429,430,431,432,433,434,435,436,437,438,439,440,455,456,457,458,459,460,462,463,464,465,466,467,468,469,482,483,484,485,486,487,489,490,491,492,493,494,495,496,497,498,499,500,509,510,511,512,513,514,516,517,518,519,520,522,523,524,525,526,527,528,537,538,539,540,541,542,543,544,545,546,547,553,554,555,556,565,566,567,568,569,570,571,572,573,574,593,594,595,596,597,598,599,600,601,621,622,623,624,625,626],[13.0,25.0,100.0,122.0,7.0,33.0,151.0,208.0,252.0,252.0,252.0,146.0,40.0,152.0,244.0,252.0,253.0,224.0,211.0,252.0,232.0,40.0,15.0,152.0,239.0,252.0,252.0,252.0,216.0,31.0,37.0,252.0,252.0,60.0,96.0,252.0,252.0,252.0,252.0,217.0,29.0,37.0,252.0,252.0,60.0,181.0,252.0,252.0,220.0,167.0,30.0,77.0,252.0,252.0,60.0,26.0,128.0,58.0,22.0,100.0,252.0,252.0,60.0,157.0,252.0,252.0,60.0,110.0,121.0,122.0,121.0,202.0,252.0,194.0,3.0,10.0,53.0,179.0,253.0,253.0,255.0,253.0,253.0,228.0,35.0,5.0,54.0,227.0,252.0,243.0,228.0,170.0,242.0,252.0,252.0,231.0,117.0,6.0,6.0,78.0,252.0,252.0,125.0,59.0,18.0,208.0,252.0,252.0,252.0,252.0,87.0,7.0,5.0,135.0,252.0,252.0,180.0,16.0,21.0,203.0,253.0,247.0,129.0,173.0,252.0,252.0,184.0,66.0,49.0,49.0,3.0,136.0,252.0,241.0,106.0,17.0,53.0,200.0,252.0,216.0,65.0,14.0,72.0,163.0,241.0,252.0,252.0,223.0,105.0,252.0,242.0,88.0,18.0,73.0,170.0,244.0,252.0,126.0,29.0,89.0,180.0,180.0,37.0,231.0,252.0,245.0,205.0,216.0,252.0,252.0,252.0,124.0,3.0,207.0,252.0,252.0,252.0,252.0,178.0,116.0,36.0,4.0,13.0,93.0,143.0,121.0,23.0,6.0])                                                                                                                                                |
-|1.0  |(780,[124,125,126,127,151,152,153,154,155,179,180,181,182,183,208,209,210,211,235,236,237,238,239,263,264,265,266,267,268,292,293,294,295,296,321,322,323,324,349,350,351,352,377,378,379,380,405,406,407,408,433,434,435,436,461,462,463,464,489,490,491,492,493,517,518,519,520,521,545,546,547,548,549,574,575,576,577,578,602,603,604,605,606,630,631,632,633,634,658,659,660,661,662],[145.0,255.0,211.0,31.0,32.0,237.0,253.0,252.0,71.0,11.0,175.0,253.0,252.0,71.0,144.0,253.0,252.0,71.0,16.0,191.0,253.0,252.0,71.0,26.0,221.0,253.0,252.0,124.0,31.0,125.0,253.0,252.0,252.0,108.0,253.0,252.0,252.0,108.0,255.0,253.0,253.0,108.0,253.0,252.0,252.0,108.0,253.0,252.0,252.0,108.0,253.0,252.0,252.0,108.0,255.0,253.0,253.0,170.0,253.0,252.0,252.0,252.0,42.0,149.0,252.0,252.0,252.0,144.0,109.0,252.0,252.0,252.0,144.0,218.0,253.0,253.0,255.0,35.0,175.0,252.0,252.0,253.0,35.0,73.0,252.0,252.0,253.0,35.0,31.0,211.0,252.0,253.0,35.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-|3.0  |(780,[151,152,153,154,155,156,157,158,159,160,161,177,178,179,180,181,182,183,184,185,186,187,188,189,190,205,206,207,208,209,210,211,212,213,214,215,216,217,218,233,234,235,236,237,238,239,240,241,242,243,244,245,246,261,262,263,264,269,270,271,272,273,274,297,298,299,300,301,324,325,326,327,328,329,350,351,352,353,354,355,356,357,373,374,375,376,377,378,379,380,381,382,383,384,400,401,402,403,404,405,406,407,408,409,410,428,429,430,431,432,433,434,435,436,437,438,439,457,458,459,460,461,462,463,464,465,466,467,492,493,494,495,520,521,522,523,538,539,540,547,548,549,550,551,565,566,567,568,573,574,575,576,577,578,579,593,594,595,596,597,598,599,600,601,602,603,604,605,606,621,622,623,624,625,626,627,628,629,630,631,632,633,649,650,651,652,653,654,655,656,657,658,659,678,679,680,681,682,683,684],[38.0,43.0,105.0,255.0,253.0,253.0,253.0,253.0,253.0,174.0,6.0,43.0,139.0,224.0,226.0,252.0,253.0,252.0,252.0,252.0,252.0,252.0,252.0,158.0,14.0,178.0,252.0,252.0,252.0,252.0,253.0,252.0,252.0,252.0,252.0,252.0,252.0,252.0,59.0,109.0,252.0,252.0,230.0,132.0,133.0,132.0,132.0,189.0,252.0,252.0,252.0,252.0,59.0,4.0,29.0,29.0,24.0,14.0,226.0,252.0,252.0,172.0,7.0,85.0,243.0,252.0,252.0,144.0,88.0,189.0,252.0,252.0,252.0,14.0,91.0,212.0,247.0,252.0,252.0,252.0,204.0,9.0,32.0,125.0,193.0,193.0,193.0,253.0,252.0,252.0,252.0,238.0,102.0,28.0,45.0,222.0,252.0,252.0,252.0,252.0,253.0,252.0,252.0,252.0,177.0,45.0,223.0,253.0,253.0,253.0,253.0,255.0,253.0,253.0,253.0,253.0,74.0,31.0,123.0,52.0,44.0,44.0,44.0,44.0,143.0,252.0,252.0,74.0,15.0,252.0,252.0,74.0,86.0,252.0,252.0,74.0,5.0,75.0,9.0,98.0,242.0,252.0,252.0,74.0,61.0,183.0,252.0,29.0,18.0,92.0,239.0,252.0,252.0,243.0,65.0,208.0,252.0,252.0,147.0,134.0,134.0,134.0,134.0,203.0,253.0,252.0,252.0,188.0,83.0,208.0,252.0,252.0,252.0,252.0,252.0,252.0,252.0,252.0,253.0,230.0,153.0,8.0,49.0,157.0,252.0,252.0,252.0,252.0,252.0,217.0,207.0,146.0,45.0,7.0,103.0,235.0,252.0,172.0,103.0,24.0])           |
-|1.0  |(780,[152,153,154,180,181,182,183,208,209,210,211,236,237,238,239,264,265,266,267,292,293,294,295,320,321,322,323,349,350,351,377,378,379,405,406,407,433,434,435,461,462,463,489,490,491,492,517,518,519,520,546,547,548,574,575,576,602,603,604,630,631,632,658,659,660,686,687,688],[5.0,63.0,197.0,20.0,254.0,230.0,24.0,20.0,254.0,254.0,48.0,20.0,254.0,255.0,48.0,20.0,254.0,254.0,57.0,20.0,254.0,254.0,108.0,16.0,239.0,254.0,143.0,178.0,254.0,143.0,178.0,254.0,143.0,178.0,254.0,162.0,178.0,254.0,240.0,113.0,254.0,240.0,83.0,254.0,245.0,31.0,79.0,254.0,246.0,38.0,214.0,254.0,150.0,144.0,241.0,8.0,144.0,240.0,2.0,144.0,254.0,82.0,230.0,247.0,40.0,168.0,209.0,31.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-|4.0  |(780,[134,135,161,162,163,188,189,190,191,216,217,218,236,237,238,243,244,245,246,264,265,266,271,272,273,292,293,294,298,299,300,301,319,320,321,322,325,326,327,328,329,346,347,348,349,353,354,355,373,374,375,376,380,381,382,383,399,400,401,402,403,404,405,406,407,408,409,410,427,428,429,430,431,432,433,434,435,436,437,454,455,456,457,458,459,460,461,462,463,464,465,466,467,482,483,484,488,489,490,491,492,493,494,510,511,516,517,518,519,520,521,522,543,544,545,546,571,572,573,574,598,599,600,601,626,627,628,654,655,656],[189.0,190.0,143.0,247.0,153.0,136.0,247.0,242.0,86.0,192.0,252.0,187.0,62.0,185.0,18.0,89.0,236.0,217.0,47.0,216.0,253.0,60.0,212.0,255.0,81.0,206.0,252.0,68.0,48.0,242.0,253.0,89.0,131.0,251.0,212.0,21.0,11.0,167.0,252.0,197.0,5.0,29.0,232.0,247.0,63.0,153.0,252.0,226.0,45.0,219.0,252.0,143.0,116.0,249.0,252.0,103.0,4.0,96.0,253.0,255.0,253.0,200.0,122.0,7.0,25.0,201.0,250.0,158.0,92.0,252.0,252.0,253.0,217.0,252.0,252.0,200.0,227.0,252.0,231.0,87.0,251.0,247.0,231.0,65.0,48.0,189.0,252.0,252.0,253.0,252.0,251.0,227.0,35.0,190.0,221.0,98.0,42.0,196.0,252.0,253.0,252.0,252.0,162.0,111.0,29.0,62.0,239.0,252.0,86.0,42.0,42.0,14.0,15.0,148.0,253.0,218.0,121.0,252.0,231.0,28.0,31.0,221.0,251.0,129.0,218.0,252.0,160.0,122.0,252.0,82.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-|3.0  |(780,[123,124,125,126,127,128,129,150,151,152,153,154,155,156,157,178,179,180,181,182,183,184,185,186,207,208,209,210,211,212,213,214,236,237,238,239,240,241,242,264,265,266,267,268,269,270,293,294,295,296,297,298,320,321,322,323,324,325,326,346,347,348,349,350,351,352,353,354,374,375,376,377,378,379,380,381,382,403,404,405,406,407,408,409,410,432,433,434,435,436,437,438,463,464,465,466,467,491,492,493,494,495,519,520,521,522,538,539,540,546,547,548,549,550,566,567,568,569,570,572,573,574,575,576,577,578,594,595,596,597,598,599,600,601,602,603,604,605,623,624,625,626,627,628,629,630,631,652,653,654,655,656,657,658,659],[42.0,118.0,219.0,166.0,118.0,118.0,6.0,103.0,242.0,254.0,254.0,254.0,254.0,254.0,66.0,18.0,232.0,254.0,254.0,254.0,254.0,254.0,238.0,70.0,104.0,244.0,254.0,224.0,254.0,254.0,254.0,141.0,207.0,254.0,210.0,254.0,254.0,254.0,34.0,84.0,206.0,254.0,254.0,254.0,254.0,41.0,24.0,209.0,254.0,254.0,254.0,171.0,91.0,137.0,253.0,254.0,254.0,254.0,112.0,40.0,214.0,250.0,254.0,254.0,254.0,254.0,254.0,34.0,81.0,247.0,254.0,254.0,254.0,254.0,254.0,254.0,146.0,110.0,246.0,254.0,254.0,254.0,254.0,254.0,171.0,73.0,89.0,89.0,93.0,240.0,254.0,171.0,1.0,128.0,254.0,219.0,31.0,7.0,254.0,254.0,214.0,28.0,138.0,254.0,254.0,116.0,19.0,177.0,90.0,25.0,240.0,254.0,254.0,34.0,164.0,254.0,215.0,63.0,36.0,51.0,89.0,206.0,254.0,254.0,139.0,8.0,57.0,197.0,254.0,254.0,222.0,180.0,241.0,254.0,254.0,253.0,213.0,11.0,140.0,105.0,254.0,254.0,254.0,254.0,254.0,254.0,236.0,7.0,117.0,117.0,165.0,254.0,254.0,239.0,50.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-|5.0  |(780,[216,217,218,219,220,221,242,243,244,245,246,247,248,249,268,269,270,271,272,273,274,275,276,294,295,296,297,298,299,300,301,322,323,324,325,347,348,349,350,351,352,375,376,377,378,403,404,405,431,432,433,434,456,457,459,460,461,462,463,482,483,484,485,488,489,490,491,510,511,512,516,517,518,519,538,539,540,541,542,543,544,545,546,567,568,569,570,571,572,573,574],[31.0,40.0,129.0,234.0,234.0,159.0,68.0,150.0,239.0,254.0,253.0,253.0,253.0,215.0,156.0,201.0,254.0,254.0,254.0,241.0,150.0,98.0,8.0,19.0,154.0,254.0,236.0,203.0,83.0,39.0,30.0,144.0,253.0,145.0,12.0,10.0,129.0,222.0,78.0,79.0,8.0,134.0,253.0,167.0,8.0,255.0,254.0,78.0,201.0,253.0,226.0,69.0,55.0,6.0,18.0,128.0,253.0,241.0,41.0,25.0,205.0,235.0,92.0,20.0,253.0,253.0,58.0,231.0,245.0,108.0,132.0,253.0,185.0,14.0,121.0,245.0,254.0,254.0,254.0,217.0,254.0,223.0,50.0,116.0,165.0,233.0,233.0,234.0,180.0,39.0,3.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-|3.0  |(780,[143,144,145,146,147,148,149,150,151,152,153,154,155,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,227,228,229,230,231,238,239,240,241,242,266,267,268,269,270,292,293,294,295,296,297,319,320,321,322,323,324,325,346,347,348,349,350,351,352,353,374,375,376,377,378,379,380,381,382,383,402,403,404,405,406,407,408,409,410,411,412,413,432,433,434,435,436,437,438,439,440,441,442,464,465,466,467,468,469,470,493,494,495,496,497,498,522,523,524,525,526,540,541,542,549,550,551,552,553,554,567,568,569,570,576,577,578,579,580,581,595,596,597,598,599,602,603,604,605,606,607,608,609,623,624,625,626,627,628,629,630,631,632,633,634,635,636,651,652,653,654,655,656,657,658,659,660,661,662,663,680,681,682,683,684,685,686,687,688,689],[12.0,99.0,91.0,142.0,155.0,246.0,182.0,155.0,155.0,155.0,155.0,131.0,52.0,138.0,254.0,254.0,254.0,254.0,254.0,254.0,254.0,254.0,254.0,254.0,254.0,252.0,210.0,122.0,33.0,220.0,254.0,254.0,254.0,235.0,189.0,189.0,189.0,189.0,150.0,189.0,205.0,254.0,254.0,254.0,75.0,35.0,74.0,35.0,35.0,25.0,13.0,224.0,254.0,254.0,153.0,90.0,254.0,254.0,247.0,53.0,6.0,152.0,246.0,254.0,254.0,49.0,66.0,158.0,254.0,254.0,249.0,103.0,8.0,54.0,251.0,254.0,254.0,254.0,248.0,74.0,5.0,140.0,254.0,254.0,254.0,254.0,254.0,254.0,202.0,125.0,45.0,58.0,181.0,234.0,254.0,254.0,254.0,254.0,254.0,254.0,252.0,140.0,22.0,30.0,50.0,73.0,155.0,253.0,254.0,254.0,254.0,254.0,191.0,2.0,91.0,200.0,254.0,254.0,254.0,254.0,118.0,4.0,192.0,254.0,254.0,254.0,154.0,141.0,254.0,254.0,254.0,116.0,25.0,126.0,86.0,3.0,188.0,254.0,254.0,250.0,61.0,24.0,209.0,254.0,15.0,23.0,137.0,254.0,254.0,254.0,209.0,168.0,254.0,254.0,48.0,9.0,9.0,127.0,241.0,254.0,254.0,255.0,242.0,63.0,101.0,254.0,254.0,254.0,205.0,190.0,190.0,205.0,254.0,254.0,254.0,254.0,242.0,67.0,33.0,166.0,254.0,254.0,254.0,254.0,254.0,254.0,254.0,254.0,250.0,138.0,55.0,7.0,88.0,154.0,116.0,194.0,194.0,154.0,154.0,88.0,49.0])|
-|6.0  |(780,[72,73,74,99,100,101,102,125,126,127,128,129,130,152,153,154,155,156,157,180,181,182,183,184,207,208,209,210,211,235,236,237,238,262,263,264,265,289,290,291,292,293,316,317,318,319,320,325,326,327,344,345,346,347,348,351,352,353,354,355,356,357,372,373,374,375,376,378,379,380,381,382,383,384,385,386,399,400,401,402,403,405,406,407,408,409,410,411,412,413,414,427,428,429,430,432,433,434,435,436,437,438,439,440,441,455,456,457,460,461,462,463,465,466,467,468,483,484,485,487,488,489,490,492,493,494,495,511,512,513,515,516,517,518,519,520,521,522,523,539,540,541,542,543,544,545,546,547,548,549,567,568,569,570,571,572,573,574,575,576,596,597,598,599,600,601,602,603],[38.0,222.0,225.0,147.0,234.0,252.0,176.0,23.0,197.0,253.0,252.0,208.0,19.0,38.0,178.0,252.0,253.0,117.0,65.0,57.0,252.0,252.0,253.0,89.0,38.0,222.0,253.0,253.0,79.0,131.0,252.0,179.0,27.0,198.0,246.0,220.0,37.0,79.0,253.0,252.0,135.0,28.0,16.0,140.0,253.0,252.0,118.0,111.0,140.0,140.0,13.0,191.0,255.0,253.0,56.0,114.0,113.0,222.0,253.0,253.0,255.0,27.0,76.0,252.0,253.0,223.0,37.0,48.0,174.0,252.0,252.0,242.0,214.0,253.0,199.0,31.0,13.0,109.0,252.0,228.0,130.0,38.0,165.0,253.0,233.0,164.0,49.0,63.0,253.0,214.0,31.0,73.0,252.0,252.0,126.0,23.0,178.0,252.0,240.0,148.0,7.0,44.0,215.0,240.0,148.0,119.0,252.0,252.0,197.0,252.0,252.0,63.0,57.0,252.0,252.0,140.0,135.0,253.0,174.0,48.0,229.0,253.0,112.0,38.0,222.0,253.0,112.0,135.0,252.0,173.0,48.0,227.0,252.0,158.0,226.0,234.0,201.0,27.0,12.0,57.0,252.0,252.0,57.0,104.0,240.0,252.0,252.0,253.0,233.0,74.0,51.0,242.0,252.0,253.0,252.0,252.0,252.0,252.0,240.0,148.0,75.0,189.0,253.0,252.0,252.0,157.0,112.0,63.0])                                                                                                                                                                                                                                                                                                                                 |
-|1.0  |(780,[151,152,153,154,179,180,181,182,208,209,210,236,237,238,264,265,266,267,292,293,294,295,320,321,322,323,348,349,350,351,376,377,378,379,404,405,406,407,432,433,434,435,460,461,462,463,488,489,490,491,516,517,518,519,544,545,546,547,572,573,574,575,600,601,602,603,629,630,631,657,658,659,685,686,687],[1.0,168.0,242.0,28.0,10.0,228.0,254.0,100.0,190.0,254.0,122.0,83.0,254.0,162.0,29.0,254.0,248.0,25.0,29.0,255.0,254.0,103.0,29.0,254.0,254.0,109.0,29.0,254.0,254.0,109.0,29.0,254.0,254.0,109.0,29.0,255.0,254.0,109.0,29.0,254.0,254.0,109.0,29.0,254.0,254.0,63.0,29.0,254.0,254.0,28.0,29.0,254.0,254.0,28.0,29.0,254.0,254.0,35.0,29.0,254.0,254.0,109.0,6.0,212.0,254.0,109.0,203.0,254.0,178.0,155.0,254.0,190.0,32.0,199.0,104.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-|7.0  |(780,[211,212,213,214,215,216,236,237,238,239,240,241,242,243,244,245,260,261,262,263,264,265,266,267,268,269,270,271,272,273,287,288,289,290,291,292,293,294,295,296,297,298,299,300,301,315,316,317,318,319,320,321,325,326,327,328,329,342,343,344,345,346,347,353,354,355,356,370,371,372,373,374,379,380,381,382,383,384,398,399,400,401,407,408,409,410,411,434,435,436,437,438,462,463,464,465,489,490,491,492,493,516,517,518,519,520,521,543,544,545,546,547,548,570,571,572,573,574,575,598,599,600,601,625,626,627,628,629,653,654,655,656,680,681,682,683,684,708,709,710,711,736,737,738],[115.0,121.0,162.0,253.0,253.0,213.0,63.0,107.0,170.0,251.0,252.0,252.0,252.0,252.0,250.0,214.0,25.0,192.0,226.0,226.0,241.0,252.0,253.0,202.0,252.0,252.0,252.0,252.0,252.0,225.0,68.0,223.0,252.0,252.0,252.0,252.0,252.0,39.0,19.0,39.0,65.0,224.0,252.0,252.0,183.0,186.0,252.0,252.0,252.0,245.0,108.0,53.0,150.0,252.0,252.0,220.0,20.0,70.0,242.0,252.0,252.0,222.0,59.0,178.0,252.0,252.0,141.0,185.0,252.0,252.0,194.0,67.0,17.0,90.0,240.0,252.0,194.0,67.0,83.0,205.0,190.0,24.0,121.0,252.0,252.0,209.0,24.0,77.0,247.0,252.0,248.0,106.0,253.0,252.0,252.0,102.0,134.0,255.0,253.0,253.0,39.0,6.0,183.0,253.0,252.0,107.0,2.0,10.0,102.0,252.0,253.0,163.0,16.0,13.0,168.0,252.0,252.0,110.0,2.0,41.0,252.0,252.0,217.0,40.0,155.0,252.0,214.0,31.0,165.0,252.0,252.0,106.0,43.0,179.0,252.0,150.0,39.0,137.0,252.0,221.0,39.0,67.0,252.0,79.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-|2.0  |(780,[151,152,153,154,155,156,157,177,178,179,180,181,182,183,184,185,205,206,207,208,211,212,213,214,232,233,234,240,241,242,260,261,262,268,269,270,271,288,289,296,297,298,299,324,325,326,327,353,354,355,380,381,382,383,408,409,410,411,414,415,416,417,434,435,436,437,438,439,440,441,442,443,444,445,456,457,458,459,460,461,462,463,464,465,466,467,468,469,470,471,472,482,483,484,485,486,487,488,489,490,491,492,493,494,495,510,511,512,513,514,515,516,517,519,520,521,522,538,539,540,545,546,547,548,549,566,567,568,572,573,574,575,576,594,595,596,597,598,599,600,601,602,603,623,624,625,626,627,628,629],[93.0,164.0,211.0,250.0,250.0,194.0,15.0,20.0,176.0,253.0,237.0,180.0,180.0,243.0,254.0,214.0,204.0,236.0,135.0,18.0,40.0,242.0,252.0,126.0,69.0,253.0,167.0,130.0,254.0,223.0,74.0,217.0,79.0,46.0,254.0,231.0,14.0,8.0,10.0,39.0,254.0,254.0,104.0,5.0,212.0,254.0,141.0,207.0,254.0,141.0,7.0,215.0,254.0,128.0,39.0,254.0,254.0,56.0,20.0,67.0,124.0,39.0,7.0,35.0,98.0,254.0,254.0,208.0,157.0,207.0,225.0,254.0,241.0,160.0,9.0,31.0,82.0,137.0,203.0,203.0,212.0,254.0,254.0,254.0,254.0,251.0,223.0,223.0,127.0,52.0,33.0,9.0,137.0,214.0,254.0,254.0,254.0,254.0,240.0,228.0,250.0,254.0,254.0,154.0,50.0,185.0,254.0,247.0,179.0,146.0,67.0,60.0,28.0,216.0,254.0,220.0,12.0,255.0,222.0,49.0,4.0,137.0,244.0,232.0,50.0,254.0,206.0,4.0,8.0,179.0,254.0,247.0,64.0,216.0,254.0,158.0,177.0,130.0,96.0,213.0,252.0,199.0,49.0,131.0,247.0,249.0,249.0,249.0,171.0,72.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-|8.0  |(780,[159,160,161,162,183,184,185,186,187,188,189,190,207,208,209,210,211,212,213,214,215,216,217,218,235,236,237,238,239,240,241,242,243,244,245,262,263,264,265,266,267,269,270,271,272,273,290,291,292,293,296,297,298,299,300,318,319,320,321,322,323,324,325,326,327,346,347,348,349,350,351,352,353,354,375,376,377,378,379,380,381,382,403,404,405,406,407,408,409,430,431,432,433,434,435,458,459,460,461,462,463,484,485,486,487,488,489,490,491,512,513,514,515,516,517,518,519,539,540,541,542,543,544,545,546,547,567,568,569,571,572,573,574,575,595,596,597,598,599,600,601,602,623,624,625,626,627,628,629,651,652,653,654,655,656,657,679,680,681,682,683],[11.0,203.0,229.0,32.0,26.0,47.0,47.0,30.0,95.0,254.0,215.0,13.0,45.0,154.0,185.0,185.0,223.0,253.0,253.0,133.0,175.0,255.0,188.0,19.0,110.0,253.0,253.0,253.0,246.0,161.0,228.0,253.0,253.0,254.0,92.0,128.0,245.0,253.0,158.0,137.0,21.0,48.0,233.0,253.0,233.0,8.0,139.0,254.0,223.0,25.0,36.0,170.0,254.0,244.0,106.0,55.0,212.0,253.0,161.0,11.0,26.0,178.0,253.0,236.0,113.0,7.0,155.0,253.0,228.0,80.0,223.0,253.0,253.0,109.0,141.0,253.0,253.0,253.0,254.0,253.0,154.0,29.0,110.0,253.0,253.0,253.0,254.0,179.0,38.0,3.0,171.0,254.0,254.0,254.0,179.0,171.0,253.0,253.0,253.0,253.0,178.0,26.0,123.0,254.0,253.0,203.0,156.0,253.0,200.0,93.0,253.0,254.0,121.0,13.0,93.0,253.0,158.0,64.0,239.0,253.0,76.0,8.0,32.0,219.0,253.0,126.0,133.0,254.0,191.0,5.0,108.0,234.0,254.0,106.0,132.0,253.0,190.0,5.0,85.0,253.0,236.0,154.0,153.0,253.0,169.0,192.0,253.0,253.0,77.0,112.0,253.0,253.0,254.0,236.0,129.0,9.0,17.0,118.0,243.0,191.0,113.0])                                                                                                                                                                                                                                                                                                                                                                                                    |
-|6.0  |(780,[100,101,102,103,127,128,129,130,131,154,155,156,157,181,182,183,184,208,209,210,211,236,237,238,263,264,265,291,292,293,319,320,346,347,348,352,353,374,375,376,378,379,380,381,382,402,403,405,406,407,408,409,410,411,429,430,431,433,434,438,439,457,458,459,461,462,466,467,485,486,487,494,495,513,514,515,522,523,541,542,543,549,550,551,569,570,571,576,577,578,579,598,599,600,601,602,603,604,605,606,627,628,629,630,631,632,633],[34.0,169.0,250.0,40.0,58.0,242.0,221.0,143.0,17.0,75.0,247.0,143.0,10.0,37.0,245.0,184.0,2.0,8.0,192.0,200.0,14.0,139.0,247.0,28.0,7.0,231.0,183.0,125.0,243.0,50.0,195.0,184.0,61.0,251.0,41.0,64.0,43.0,152.0,210.0,7.0,96.0,237.0,254.0,247.0,107.0,250.0,84.0,6.0,223.0,84.0,13.0,87.0,246.0,72.0,43.0,254.0,80.0,56.0,151.0,147.0,193.0,67.0,254.0,41.0,13.0,19.0,42.0,253.0,67.0,254.0,13.0,14.0,253.0,68.0,255.0,13.0,77.0,240.0,67.0,254.0,13.0,5.0,181.0,147.0,25.0,229.0,105.0,5.0,156.0,213.0,20.0,107.0,246.0,105.0,14.0,49.0,95.0,217.0,209.0,27.0,107.0,246.0,253.0,253.0,240.0,130.0,6.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-|9.0  |(780,[209,210,211,212,213,214,236,237,238,239,240,241,242,243,263,264,265,266,267,268,269,270,271,272,291,292,293,297,298,299,300,319,320,321,325,326,327,328,347,348,349,350,351,352,353,354,355,375,376,377,378,379,380,381,403,404,405,406,407,408,409,432,433,434,435,436,461,462,463,464,489,490,491,492,517,518,519,520,544,545,546,547,571,572,573,574,599,600,601,626,627,628,629,653,654,655,656,680,681,682,683,708,709,710,711,735,736,737,738],[18.0,105.0,227.0,253.0,253.0,122.0,57.0,199.0,253.0,252.0,252.0,252.0,252.0,159.0,20.0,211.0,252.0,232.0,152.0,73.0,167.0,252.0,215.0,6.0,197.0,252.0,182.0,37.0,235.0,243.0,47.0,188.0,252.0,103.0,37.0,235.0,229.0,27.0,189.0,253.0,86.0,8.0,43.0,139.0,190.0,211.0,45.0,232.0,252.0,200.0,201.0,252.0,252.0,84.0,213.0,245.0,252.0,253.0,252.0,242.0,42.0,56.0,84.0,253.0,252.0,160.0,45.0,253.0,252.0,38.0,89.0,255.0,253.0,38.0,80.0,253.0,189.0,32.0,41.0,179.0,232.0,84.0,15.0,225.0,252.0,115.0,153.0,252.0,164.0,68.0,245.0,243.0,79.0,32.0,237.0,245.0,82.0,9.0,148.0,252.0,169.0,106.0,253.0,196.0,7.0,54.0,228.0,129.0,28.0])                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-only showing top 20 rows
-
+<pre>[nltk_data] Downloading package words to /root/nltk_data...
+[nltk_data]   Unzipping corpora/words.zip.
+Dictionary length: 236736
+[&#39;A&#39;, &#39;a&#39;, &#39;aa&#39;, &#39;aal&#39;, &#39;aalii&#39;, &#39;aam&#39;, &#39;Aani&#39;, &#39;aardvark&#39;, &#39;aardwolf&#39;, &#39;Aaron&#39;, &#39;Aaronic&#39;, &#39;Aaronical&#39;, &#39;Aaronite&#39;, &#39;Aaronitic&#39;, &#39;Aaru&#39;]
 </pre>
 </div>
 </div>
@@ -12180,12 +11887,31 @@ only showing top 20 rows
 </div>
 
 </div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Then we load another dataset from the NLTK Corpora collection: <code>movie_reviews</code>.</p>
+<p>The movie reviews are categorized between <em>positive</em> and <em>negative</em>, so we construct a list of words (usually called <strong>bag of words</strong>) for each category.</p>
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">training</span><span class="o">.</span><span class="n">printSchema</span><span class="p">()</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="k">import</span> <span class="n">movie_reviews</span>
+<span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">&#39;movie_reviews&#39;</span><span class="p">)</span>
+
+<span class="n">neg_reviews</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pos_reviews</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">fileid</span> <span class="ow">in</span> <span class="n">movie_reviews</span><span class="o">.</span><span class="n">fileids</span><span class="p">(</span><span class="s1">&#39;neg&#39;</span><span class="p">):</span>
+  <span class="n">neg_reviews</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">movie_reviews</span><span class="o">.</span><span class="n">words</span><span class="p">(</span><span class="n">fileid</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">fileid</span> <span class="ow">in</span> <span class="n">movie_reviews</span><span class="o">.</span><span class="n">fileids</span><span class="p">(</span><span class="s1">&#39;pos&#39;</span><span class="p">):</span>
+  <span class="n">pos_reviews</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">movie_reviews</span><span class="o">.</span><span class="n">words</span><span class="p">(</span><span class="n">fileid</span><span class="p">))</span>
 </pre></div>
 
 </div>
@@ -12202,44 +11928,8 @@ only showing top 20 rows
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>root
- |-- label: double (nullable = true)
- |-- features: vector (nullable = true)
-
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">test</span><span class="o">.</span><span class="n">printSchema</span><span class="p">()</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>root
- |-- label: double (nullable = true)
- |-- features: vector (nullable = true)
-
+<pre>[nltk_data] Downloading package movie_reviews to /root/nltk_data...
+[nltk_data]   Unzipping corpora/movie_reviews.zip.
 </pre>
 </div>
 </div>
@@ -12260,109 +11950,24 @@ only showing top 20 rows
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>First of all, find out how many instances we have in our training / test split.</p>
+<p>In this Colab, you will develop a very simplistic spell-checker.  By no means you should think of using it for a real-world use case, but it is an interesting exercise to highlight the strenghts and weaknesses of Bloom Filters!</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">training</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
-</pre></div>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">bloom_filter</span> <span class="k">import</span> <span class="n">BloomFilter</span>
 
-</div>
-</div>
-</div>
+<span class="n">word_filter</span> <span class="o">=</span> <span class="n">BloomFilter</span><span class="p">(</span><span class="n">max_elements</span><span class="o">=</span><span class="mi">236736</span><span class="p">)</span>
 
-<div class="output_wrapper">
-<div class="output">
+<span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">word_list</span><span class="p">:</span>
+  <span class="n">word_filter</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
 
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[22]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>60000</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[23]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">test</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[23]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>10000</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Now train a Decision Tree on the training dataset using Spark MLlib.</p>
-<p>You can refer to the Python example on this documentation page: <a href="https://spark.apache.org/docs/latest/ml-classification-regression.html#decision-tree-classifier">https://spark.apache.org/docs/latest/ml-classification-regression.html#decision-tree-classifier</a></p>
-<p>(Note : You <strong>don't</strong> need to and should <strong>NOT</strong> use Indexer as shown by the example, so that your answers can match our solution answers for gradescope problems.)</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[58]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pyspark.ml</span> <span class="k">import</span> <span class="n">Pipeline</span>
-<span class="kn">from</span> <span class="nn">pyspark.ml.classification</span> <span class="k">import</span> <span class="n">DecisionTreeClassifier</span>
-<span class="kn">from</span> <span class="nn">pyspark.ml.feature</span> <span class="k">import</span> <span class="n">StringIndexer</span><span class="p">,</span> <span class="n">VectorIndexer</span>
-<span class="kn">from</span> <span class="nn">pyspark.ml.evaluation</span> <span class="k">import</span> <span class="n">MulticlassClassificationEvaluator</span>
-
-<span class="c1"># DecisionTree model.</span>
-<span class="n">dt</span> <span class="o">=</span> <span class="n">DecisionTreeClassifier</span><span class="p">()</span>
-
-<span class="c1"># Chain indexers and tree in a Pipeline</span>
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">stages</span><span class="o">=</span><span class="p">[</span><span class="n">dt</span><span class="p">])</span>
-
-<span class="c1"># Train model.  This also runs the indexers.</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
-
-<span class="c1"># Make predictions.</span>
-<span class="n">predictions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+<span class="n">word_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">word_list</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12374,19 +11979,27 @@ only showing top 20 rows
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>With the Decision Tree you just induced on the training data, predict the labels of the test set.
-Print the predictions for the first 10 digits, and compare them with the labels.</p>
+<p>If you executed the cell above, you now have 3 different variables in your scope:</p>
+<ol>
+<li><code>word_list</code>, a Python list containing the English dictionary (in case insensitive order)</li>
+<li><code>word_filter</code>, a Bloom filter where we have already added all the words in the English dictionary</li>
+<li><code>word_set</code>, a <a href="https://docs.python.org/3.6/library/stdtypes.html#set-types-set-frozenset">Python set</a> built from the same list of words in the English dictionary</li>
+</ol>
+<p>Let's inspect the size of each datastructure using the <a href="https://docs.python.org/3/library/sys.html#sys.getsizeof">getsizeof()</a> method!</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[59]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">test</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">predictions</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sys</span> <span class="k">import</span> <span class="n">getsizeof</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Size of word_list (in bytes): {getsizeof(word_list)}&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Size of word_filter (in bytes): {getsizeof(word_filter)}&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Size of word_set (in bytes): {getsizeof(word_set)}&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12403,38 +12016,9 @@ Print the predictions for the first 10 digits, and compare them with the labels.
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>+-----+
-|label|
-+-----+
-|  7.0|
-|  2.0|
-|  1.0|
-|  0.0|
-|  4.0|
-|  1.0|
-|  4.0|
-|  9.0|
-|  5.0|
-|  9.0|
-+-----+
-only showing top 10 rows
-
-+----------+
-|prediction|
-+----------+
-|       7.0|
-|       2.0|
-|       8.0|
-|       0.0|
-|       9.0|
-|       1.0|
-|       5.0|
-|       6.0|
-|       6.0|
-|       9.0|
-+----------+
-only showing top 10 rows
-
+<pre>Size of word_list (in bytes): 2115960
+Size of word_filter (in bytes): 64
+Size of word_set (in bytes): 8388840
 </pre>
 </div>
 </div>
@@ -12447,20 +12031,20 @@ only showing top 10 rows
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>The small sample above looks good, but not great!</p>
-<p>Let's dig deeper. Compute the accuracy of our model, using the <code>MulticlassClassificationEvaluator</code> from MLlib.</p>
+<p>You should have noticed how efficient is the Bloom filter in terms of memory footprint!</p>
+<p>Now let's find out how fast is the main operation for which we construct Bloom filters: <em>membership testing</em>. To do so, we will use the <code>%timeit</code> IPython magic command, which times the repeated execution of a single Python statement.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[60]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">MulticlassClassificationEvaluator</span><span class="p">(</span><span class="n">predictionCol</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">,</span> <span class="n">metricName</span><span class="o">=</span><span class="s2">&quot;accuracy&quot;</span><span class="p">)</span>
-<span class="n">accuracy</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Accuracy on the test set = </span><span class="si">%g</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">accuracy</span><span class="p">))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">timeit</span> -r 3 &quot;California&quot; in word_list
+<span class="o">%</span><span class="k">timeit</span> -r 3 &quot;California&quot; in word_filter
+<span class="o">%</span><span class="k">timeit</span> -r 3 &quot;California&quot; in word_set
 </pre></div>
 
 </div>
@@ -12477,7 +12061,11 @@ only showing top 10 rows
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Accuracy on the test set = 0.6823 
+<pre>1000 loops, best of 3: 476 µs per loop
+The slowest run took 9.61 times longer than the fastest. This could mean that an intermediate result is being cached.
+100000 loops, best of 3: 13.8 µs per loop
+The slowest run took 687.13 times longer than the fastest. This could mean that an intermediate result is being cached.
+10000000 loops, best of 3: 79.7 ns per loop
 </pre>
 </div>
 </div>
@@ -12490,19 +12078,44 @@ only showing top 10 rows
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Find out the max depth of the trained Decision Tree, and its total number of nodes.</p>
+<p>Notice the performance gap between linear search on a list, multiple hash computations in a Bloom filter, and a single hash computation in a native Python <code>Set()</code>.</p>
+<p>We now have all the building blocks required to build our spell-checker, and we understand the performance tradeoffs of each datastructure we chose. Write a function that takes as arguments (1) a list of words, and (2) any of the 3 dictionary datastructures we constructed. The function must return the number of words which <strong>do not appear</strong> in the dictionary.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[64]:</div>
+<div class="prompt input_prompt">In&nbsp;[32]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">treeModel</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">stages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="c1"># summary only</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">treeModel</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">spell_checker</span><span class="p">(</span><span class="n">lst</span><span class="p">,</span> <span class="n">dictionary</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Input:  </span>
+<span class="sd">          (1) list of words</span>
+<span class="sd">          (2) any of the 3 dictionarty datastructures we contructed</span>
+<span class="sd">  Output: </span>
+<span class="sd">          Returns the number of words which do not appear in the dictionary</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">lst</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="p">:</span>
+      <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+  <span class="k">return</span> <span class="n">count</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[33]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">timeit</span> spell_checker(neg_reviews, word_filter)
+<span class="o">%</span><span class="k">timeit</span> spell_checker(neg_reviews, word_set)
 </pre></div>
 
 </div>
@@ -12519,7 +12132,8 @@ only showing top 10 rows
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>DecisionTreeClassificationModel: uid=DecisionTreeClassifier_96a3ad375bac, depth=5, numNodes=61, numClasses=10, numFeatures=780
+<pre>1 loop, best of 5: 6.15 s per loop
+10 loops, best of 5: 86.8 ms per loop
 </pre>
 </div>
 </div>
@@ -12528,39 +12142,41 @@ only showing top 10 rows
 </div>
 
 </div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[34]:</div>
 <div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>It appears that the default settings of the Decision Tree implemented in MLlib did not allow us to train a very powerful model!</p>
-<p>Before starting to train a Decision Tree, you can tune the max depth it can reach using the <a href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.classification.DecisionTreeClassifier.html#pyspark.ml.classification.DecisionTreeClassifier.setMaxDepth">setMaxDepth()</a> method. Train 21 different DTs, varying the max depth from 0 to 20, endpoints included (i.e., [0, 20]). For each value of the parameter, print the accuracy achieved on the test set, and the number of nodes contained in the given DT.</p>
-<p><strong>IMPORTANT:</strong> this parameter sweep can take 30 minutes or more, depending on how busy is your Colab instance. Notice how the induction time grows super-linearly!</p>
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">neg_filter</span> <span class="o">=</span> <span class="n">spell_checker</span><span class="p">(</span><span class="n">neg_reviews</span><span class="p">,</span> <span class="n">word_filter</span><span class="p">)</span>
+<span class="n">neg_set</span> <span class="o">=</span> <span class="n">spell_checker</span><span class="p">(</span><span class="n">neg_reviews</span><span class="p">,</span> <span class="n">word_set</span><span class="p">)</span>
+</pre></div>
 
 </div>
 </div>
+</div>
+
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[69]:</div>
+<div class="prompt input_prompt">In&nbsp;[35]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">max_depth</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">21</span><span class="p">):</span>
-  <span class="c1"># DecisionTree model.</span>
-  <span class="n">dt1</span> <span class="o">=</span> <span class="n">DecisionTreeClassifier</span><span class="p">(</span><span class="n">maxDepth</span> <span class="o">=</span> <span class="n">max_depth</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">error_rate_filter</span> <span class="o">=</span> <span class="n">neg_filter</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">neg_reviews</span><span class="p">))</span>
+<span class="n">error_rate_set</span> <span class="o">=</span> <span class="n">neg_set</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">neg_reviews</span><span class="p">))</span>
+</pre></div>
 
-  <span class="c1"># Chain indexers and tree in a Pipeline</span>
-  <span class="n">pipeline1</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">stages</span><span class="o">=</span><span class="p">[</span><span class="n">dt1</span><span class="p">])</span>
+</div>
+</div>
+</div>
 
-  <span class="c1"># Train model.  This also runs the indexers.</span>
-  <span class="n">model1</span> <span class="o">=</span> <span class="n">pipeline1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
-
-  <span class="c1"># Make predictions.</span>
-  <span class="n">predictions1</span> <span class="o">=</span> <span class="n">model1</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
-
-  <span class="n">evaluator1</span> <span class="o">=</span> <span class="n">MulticlassClassificationEvaluator</span><span class="p">(</span><span class="n">predictionCol</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">,</span> <span class="n">metricName</span><span class="o">=</span><span class="s2">&quot;accuracy&quot;</span><span class="p">)</span>
-  <span class="n">accuracy1</span> <span class="o">=</span> <span class="n">evaluator1</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">predictions1</span><span class="p">)</span>
-  <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Accuracy on the test set with max depth &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_depth</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">accuracy1</span><span class="p">))</span>
-  <span class="nb">print</span><span class="p">(</span><span class="n">model1</span><span class="o">.</span><span class="n">stages</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">error_rate_filter</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span> 
+<span class="nb">print</span><span class="p">(</span><span class="n">error_rate_set</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12577,48 +12193,8 @@ only showing top 10 rows
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Accuracy on the test set with max depth 0 = 0.1135
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_d09e167202c8, depth=0, numNodes=1, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 1 = 0.1992
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_1e48b6a500f3, depth=1, numNodes=3, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 2 = 0.343
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_241dce3c8442, depth=2, numNodes=7, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 3 = 0.4914
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_edcca08aa210, depth=3, numNodes=15, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 4 = 0.5923
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_a3fac05545eb, depth=4, numNodes=31, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 5 = 0.6823
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_864854ae1ae3, depth=5, numNodes=61, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 6 = 0.7453
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_6ec5fcfe24b2, depth=6, numNodes=119, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 7 = 0.7898
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_67e3712f7c20, depth=7, numNodes=247, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 8 = 0.8189
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_5a4633f3d844, depth=8, numNodes=489, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 9 = 0.8458
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_d5a1fea0d356, depth=9, numNodes=943, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 10 = 0.8594
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_2285e7ec10e1, depth=10, numNodes=1701, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 11 = 0.8705
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_79b47655f4b8, depth=11, numNodes=2693, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 12 = 0.8766
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_4fecc97065fb, depth=12, numNodes=3763, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 13 = 0.8789
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_e29d06188d42, depth=13, numNodes=4747, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 14 = 0.8783
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_af24d84cdb3d, depth=14, numNodes=5591, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 15 = 0.8793
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_44c278becb34, depth=15, numNodes=6209, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 16 = 0.8794
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_f956f79ccc9b, depth=16, numNodes=6625, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 17 = 0.8787
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_4a8aa3bac905, depth=17, numNodes=6887, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 18 = 0.8785
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_4f9399c4798d, depth=18, numNodes=7083, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 19 = 0.8776
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_7090f76eef75, depth=19, numNodes=7235, numClasses=10, numFeatures=780
-Accuracy on the test set with max depth 20 = 0.8778
-DecisionTreeClassificationModel: uid=DecisionTreeClassifier_f9cb242c001a, depth=20, numNodes=7349, numClasses=10, numFeatures=780
+<pre>26.42228481369866
+27.987530216064833
 </pre>
 </div>
 </div>
@@ -12641,20 +12217,18 @@ DecisionTreeClassificationModel: uid=DecisionTreeClassifier_f9cb242c001a, depth=
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <hr>
-<hr>
-<h1 id="Results:">Results:<a class="anchor-link" href="#Results:">&#182;</a></h1><hr>
-<hr>
+<h1 id="Results">Results<a class="anchor-link" href="#Results">&#182;</a></h1><hr>
 <ul>
-<li>Q2.1: 60000</li>
-<li>Q2.2: 10000</li>
-<li>Q2.3: 4</li>
-<li>Q2.4: 9</li>
-<li>Q2.5: 0.682 </li>
-<li>Q2.6: 5</li>
-<li>Q2.7: 2000</li>
-<li>Q2.8: 8000</li>
-<li>Q2.9: [11, 15]</li>
+<li>Q2.1 : 64</li>
+<li>Q2.2 : 8388840</li>
+<li>Q3.1 : [1 µs, 100 µs)</li>
+<li>Q3.2 : [1 ns, 100 ns)</li>
+<li>Q4.1 : [1 s, 1000 s)</li>
+<li>Q4.2 : 26.422</li>
+<li>Q4.3 : [1 ms, 1 s)</li>
+<li>Q4.4 : 27.988</li>
 </ul>
+<hr>
 
 </div>
 </div>
