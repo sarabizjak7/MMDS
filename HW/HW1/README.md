@@ -7,4 +7,4 @@
 
 *Instructions are in handout file.*
 
-*Graded with 100%*
+*Graded with 100%.*
