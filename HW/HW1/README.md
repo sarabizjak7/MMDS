@@ -6,3 +6,5 @@
 4. LSH for Approximate Near Neighbor Search
 
 *Instructions are in handout file.*
+
+*Graded with 100%*
