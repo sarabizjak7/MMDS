@@ -6,3 +6,5 @@
 4. Recommendation Systems
 
 *Instructions are in handout file.*
+
+*Graded with 100%.*
