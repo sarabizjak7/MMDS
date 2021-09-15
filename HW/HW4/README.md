@@ -6,3 +6,5 @@
 4. Data Streams
 
 *Instructions are in handout file.*
+
+*Graded with 85% (Algorithm in task 1d with 15% not implemented).*
