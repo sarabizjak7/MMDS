@@ -6,3 +6,5 @@
 4. Dense Communities in Networks
 
 *Instructions are in handout file.*
+
+*Graded with 99% (in the report swapped results for hubbines and authority scores by mistake).*
